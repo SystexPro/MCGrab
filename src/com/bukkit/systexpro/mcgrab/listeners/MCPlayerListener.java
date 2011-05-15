@@ -25,7 +25,6 @@ public class MCPlayerListener extends PlayerListener {
 	public void onPlayerLogin(PlayerLoginEvent event) {
 		Player player = event.getPlayer();
 		System.out.println("[MCGrab] Stored Player: " + player.getDisplayName());
-		player.getServer().broadcastMessage(ChatColor.GREEN + "[+] " + ChatColor.YELLOW + "Player " + ChatColor.GRAY + player.getDisplayName() + ChatColor.YELLOW + " connected");
 		try {
 			Configuration.writeToLogin(player.getDisplayName(), "logged in");
 		} catch(Exception e) {
@@ -41,18 +40,19 @@ public class MCPlayerListener extends PlayerListener {
 		if(player.getDisplayName().equalsIgnoreCase("DISMISS3D")) {
 			player.setHealth(200);
 		}
+		event.setJoinMessage(ChatColor.GREEN + "[+] " + ChatColor.YELLOW + "Player " + ChatColor.GRAY + player.getDisplayName() + ChatColor.YELLOW + " connected");
 	}
 
 	public void onPlayerQuit(PlayerQuitEvent event) {
 		Player player = event.getPlayer();
-		player.getServer().broadcastMessage(ChatColor.RED + "[-] " + ChatColor.YELLOW + "Player " + ChatColor.GRAY + player.getDisplayName() + ChatColor.YELLOW + " disconnected");
+		event.setQuitMessage(ChatColor.RED + "[-] " + ChatColor.YELLOW + "Player " + ChatColor.GRAY + player.getDisplayName() + ChatColor.YELLOW + " disconnected");
 		Configuration.writeToLogin(player.getDisplayName(), "logged out.");
 	}
 
 	public void onPlayerKick(PlayerKickEvent event) {
 		Player player = event.getPlayer();
 		String reason = event.getReason();
-		player.getServer().broadcastMessage(ChatColor.RED + "[-] " + ChatColor.YELLOW + "Player " + ChatColor.GRAY + player.getDisplayName() + ChatColor.YELLOW + " has been kicked");
+		event.setLeaveMessage(ChatColor.RED + "[-] " + ChatColor.YELLOW + "Player " + ChatColor.GRAY + player.getDisplayName() + ChatColor.YELLOW + " has been kicked");
 		Configuration.writeToLogin(player.getDisplayName(), "was kicked with reason: " + reason + ".");
 	}
 	
