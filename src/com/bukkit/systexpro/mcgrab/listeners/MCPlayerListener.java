@@ -11,11 +11,13 @@ import org.bukkit.event.player.PlayerQuitEvent;
 
 import com.bukkit.systexpro.mcgrab.Configuration;
 import com.bukkit.systexpro.mcgrab.MCGrab;
+import com.bukkit.systexpro.mcgrab.irc.UnderBot;
 
 public class MCPlayerListener extends PlayerListener {
 
 	@SuppressWarnings("unused")
 	private final MCGrab plugin;
+	private UnderBot bot;
 	
 	public MCPlayerListener(MCGrab instance) {
 		plugin = instance;

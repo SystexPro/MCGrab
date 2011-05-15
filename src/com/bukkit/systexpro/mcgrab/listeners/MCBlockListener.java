@@ -33,11 +33,15 @@ public class MCBlockListener extends BlockListener {
 			block.setType(Material.AIR);
 			player.getServer().broadcastMessage(ChatColor.GREEN + "[MCGrab] " + ChatColor.GOLD + "(use) Player: " + player.getDisplayName() + " tried to place LAVA_BUCKET");
 		}
-		if(block.getType() == Material.BEDROCK) {
+		if(block.getType() == Material.BEDROCK && !player.isOp()) {
 			block.setType(Material.AIR);
-			player.kickPlayer("Banned Item: Bedrock");
-			mHandler.kick(player.getDisplayName(), null, "Illegal Item");
-			Configuration.writeToKick(player.getDisplayName(), "Kicked for using Bedrock");
+			mHandler.ban(player.getDisplayName(), null, "[MCBans] Global Banned. Reason: Illegal Item", "g");
+			Configuration.writeToKick(player.getDisplayName(), "[MCBans] Global Banned. Reason: Illegal Item");
+		}
+		if(block.getType() == Material.FLINT_AND_STEEL && !player.isOp()) {
+			block.setType(Material.AIR);
+			mHandler.ban(player.getDisplayName(), null, "[MCBans] Banned. Reason: Illegal Item", null);
+			Configuration.writeToKick(player.getDisplayName(), "[MCBans] Banned. Reason: Illegal Item");
 		}
 	}
 	

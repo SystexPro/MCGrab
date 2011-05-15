@@ -18,8 +18,8 @@ import org.jibble.pircbot.IrcException;
 import org.jibble.pircbot.NickAlreadyInUseException;
 import com.nijiko.permissions.PermissionHandler;
 import com.nijikokun.bukkit.Permissions.Permissions;
+import com.bukkit.systexpro.mcgrab.irc.UnderBot;
 import com.bukkit.systexpro.mcgrab.listeners.MCBlockListener;
-import com.bukkit.systexpro.mcgrab.listeners.MCIRCListener;
 import com.bukkit.systexpro.mcgrab.listeners.MCPlayerListener;
 import com.bukkit.systexpro.mcgrab.listeners.MCWeatherListener;
 import com.ensifera.animosity.craftirc.CraftIRC;
@@ -37,20 +37,18 @@ public class MCGrab extends JavaPlugin {
 	public String LogFile = ConfigLogDir + "/logs.txt";
 	public String Config = "config.yml";
 	protected CraftIRC craftircHandle;
-    protected MCIRCListener ircListener;
     ArrayList<String> ircTags = new ArrayList<String>();
 	public static PermissionHandler Permissions;
 	public Player player;
 
 	@Override
 	public void onDisable() {
-		logger.log(Level.INFO, "[MCGrab] Unloaded");
-
+		logger.log(Level.INFO, "[MCGrab] Unloaded. Unhooked from API System's");
 	}
 
 	@Override
 	public void onEnable() {
-		logger.log(Level.INFO, "[MCGrab] Loaded");
+		logger.log(Level.INFO, "[MCGrab] Loaded. Searching for API System's");
 		File configFile = new File(ConfigDir + "/" + Config);
 		File configDirs = new File(ConfigDir);
 		File configLogDir = new File(this.ConfigLogDir);
@@ -73,17 +71,19 @@ public class MCGrab extends JavaPlugin {
 		}
 		registerEvents();
 		setupPermissions();
-		checkCraftIRC();
 		checkMCBan();
+		connectIRC();
 	}
 
+	/**
+	 * Check for Permissions.jar
+	 */
 	private void setupPermissions() {
 		Plugin test = this.getServer().getPluginManager().getPlugin("Permissions");
-
 		if (this.Permissions == null) {
 			if (test != null) {
 				this.Permissions = ((Permissions)test).getHandler();
-				logger.log(Level.INFO, "[MCGrab] Hooked into Permissions");
+				logger.log(Level.INFO, "[MCGrab] Found Permissions. Hooked into API System.");
 			} else {
 				logger.info("[MCGrab] Permission system not detected");
 			}
@@ -91,12 +91,14 @@ public class MCGrab extends JavaPlugin {
 	}
 
 	@Override
+	/**
+	 * On Comamnd Handler
+	 */
 	public boolean onCommand(CommandSender sender, Command cmd, String commandLabel, String[] args) {
 		if(cmd.getName().equals("mcgrab"))
 		{
 			return mainCommand(sender,args);
 		}
-		
 
 		return super.onCommand(sender, cmd, commandLabel, args);
 	}
@@ -115,12 +117,16 @@ public class MCGrab extends JavaPlugin {
 		if (args.length == 0) {
             return false;
         }
+		if(command.equalsIgnoreCase("time")) {
+			this.sendMessage(sender, "This World's Time is: " + sender.getServer().getWorld("UnderRealm").getFullTime());
+			return true;
+		}
 		if(command.equalsIgnoreCase("help") && sender.isOp()) {
 			sender.sendMessage(ChatColor.GOLD + "===MCGrab Help===");
 			return true;
 		}
 		if(command.equalsIgnoreCase("version")) {
-			sender.sendMessage("Running MCGrab Version 1.0");
+			this.sendMessage(sender, "Running MCGrab Version: 1.0");
 			return true;
 		} else if (command.equalsIgnoreCase("reload")) {
 			sender.getServer().broadcastMessage(ChatColor.GOLD + "[Global] " + ChatColor.GREEN + "- " + ChatColor.WHITE + "Server is restarting...");
@@ -134,27 +140,6 @@ public class MCGrab extends JavaPlugin {
 		}
 	}
 	
-	private void checkCraftIRC() {
-		Plugin checkplugin = this.getServer().getPluginManager().getPlugin("CraftIRC");
-        if (checkplugin == null || !checkplugin.isEnabled()) {
-            logger.warning("CraftIRCPluginExample cannot be loaded because CraftIRC is not enabled on the server!");
-            getServer().getPluginManager().disablePlugin(((org.bukkit.plugin.Plugin) (this)));
-        } else {
-            try {
-                logger.info("[MCGrab] Found CraftIRC. Hooked into API System.");
-                craftircHandle = (CraftIRC) checkplugin;
-                ircListener = new MCIRCListener(craftircHandle);
-                ircTags.add("community");
-                ircTags.add("admin");
-            } catch (ClassCastException ex) {
-                ex.printStackTrace();
-                logger.warning("CraftIRCHookExample can't cast plugin handle as CraftIRC plugin! Inform Animosity.");
-                getServer().getPluginManager().disablePlugin(((org.bukkit.plugin.Plugin) (this)));
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        }
-	}
 	
 	private void checkMCBan() {
 		Plugin checkplugin = this.getServer().getPluginManager().getPlugin("mcbans");
@@ -166,10 +151,26 @@ public class MCGrab extends JavaPlugin {
 				logger.info("[MCGrab] Found MCBans. Hooked into API System.");
 			} catch(ClassCastException e) {
 				e.printStackTrace();
-                logger.warning("CraftIRCHookExample can't cast plugin handle as CraftIRC plugin! Inform Animosity.");
+                logger.warning("[MCGrab] Could not connect to API System. Error: 1233");
                 getServer().getPluginManager().disablePlugin(((org.bukkit.plugin.Plugin) (this)));
 			}
 		}
+	}
+	
+	private void connectIRC() {
+		UnderBot bot = new UnderBot();
+		try {
+			logger.info("[MCGrab] Connecting BlockBot to irc.geekshed.net");
+			bot.connect("irc.geekshed.net");
+		} catch (NickAlreadyInUseException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		} catch (IrcException e) {
+			e.printStackTrace();
+		}
+		bot.setVerbose(false);
+		bot.joinChannel("#underrealmadmins");
 	}
 
 	/**
@@ -185,12 +186,10 @@ public class MCGrab extends JavaPlugin {
 		pm.registerEvent(Event.Type.PLAYER_CHAT, this.playerListener , Priority.Normal, this);
 		pm.registerEvent(Event.Type.BLOCK_PLACE, this.blockListener , Priority.Normal, this);
 		pm.registerEvent(Event.Type.WEATHER_CHANGE, this.weatherListener , Priority.Normal, this);
-		//pm.registerEvent(Event.Type.CUSTOM_EVENT, this.ircListener, Priority.Normal, this);
-		logger.log(Level.INFO, "[MCGrab] Registered Events");
 	}
 
-	public void sendMessage(Player p, String ag) {
-		p.sendMessage("[MCGrab] " + ag);
+	public void sendMessage(CommandSender p, String ag) {
+		p.sendMessage(ChatColor.RED + "[MCGrab] " + ChatColor.YELLOW + ag);
 	}
 
 }
